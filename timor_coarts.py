@@ -11,8 +11,14 @@ input_filename = "Calliance1.csv"
 # ---------------------------------
 
 input_file = os.path.join(input_folderpath, input_filename)
-print(input_file)
 Calliance1_nmr_df = pd.read_csv(input_file)
 print(Calliance1_nmr_df.head)
 
+
+
+
 # T2 distributionの表示
+# fig = plt.figure()
+# ax = fig.add_subplot(111)
+
+# ax.plot(Calliance1_nmr_df[])
