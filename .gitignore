@@ -115,3 +115,6 @@ dmypy.json
 
 data/
 others/
+
+# pycharm
+.idea
