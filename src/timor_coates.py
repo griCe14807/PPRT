@@ -4,7 +4,7 @@ import numpy as np
 from scipy import interpolate
 
 
-def k_timor_coates(df, cut_coates=None, c_coates=0.1, phit=None):
+def k_timor_coates(df, cut_coates, c_coates, phit):
     """
     T2 distributionからtimor coats permeabilityを計算。
     :param df: T2 distributionのdf. "T2" columnと"Por" columnは必須。"BVI_Por" columnもあったほうがいい。
@@ -29,15 +29,17 @@ def k_timor_coates(df, cut_coates=None, c_coates=0.1, phit=None):
     return ktim
 
 
-def main(df, cut_coates_dict={}):
+def main(df, cut_coates_dict={}, c_coates=0.1, phit=None):
+    print(cut_coates_dict)
     output_dict = {"ID": [], "ktim": [], "cperm": []}
     for key, group in df.groupby("ID"):
-        ktim = k_timor_coates(group, cut_coates=cut_coates_dict.get(key))
+        ktim = k_timor_coates(group, cut_coates=cut_coates_dict.get(key),
+                              c_coates=c_coates, phit=phit)
         output_dict["ID"].append(key)
         output_dict["ktim"].append(ktim)
         output_dict["cperm"].append(group.cperm.iloc[1])
 
-        print("{0}のcperm={1}, ktim={2}".format(key, group.cperm.iloc[1], ktim))
+        # print("{0}のcperm={1}, ktim={2}".format(key, group.cperm.iloc[1], ktim))
 
     output_df = pd.DataFrame(output_dict)
     # print(output_df)
@@ -61,9 +63,10 @@ if __name__ == "__main__":
     Calliance1_nmr_df = pd.read_csv(input_file)
 
     # グラフをみてじぶんで定義したcut_coates
-    cut_coates_dict = {"Calliance1_22": 15,
+    the_cut_coates_dict = {"Calliance1_22": 15,
                        "Calliance1_24": 20,
                        "Calliance1_28": 26
                        }
 
     ktim_result_df = main(Calliance1_nmr_df)
+    print(ktim_result_df)
