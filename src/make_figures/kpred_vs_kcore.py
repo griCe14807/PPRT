@@ -1,13 +1,14 @@
 import sys
 import os
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 
 # my module
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(current_dir, '../'))
 import timor_coates as ktim
-
+import calc_cutoff_BVI
 
 def confirm_c_coates(Calliance1_nmr_df):
     """
@@ -35,7 +36,7 @@ def confirm_c_coates(Calliance1_nmr_df):
     ax.set_xscale("log")
     ax.set_yscale("log")
     ax.set_xlim([0.000001, 1000000])
-    # ax.set_ylim([0.000001, 1000000])
+    ax.set_ylim([0.000001, 1000000])
     ax.legend()
     plt.show()
 
@@ -43,8 +44,8 @@ def confirm_c_coates(Calliance1_nmr_df):
 if __name__ == "__main__":
     # ---------inputs-------------------
 
-    input_folderpath = r"D:\PPRT関係\data"
-    input_filename_list = ["Calliance1.csv", "Brecknock4_nmr.csv", "Noblige2_nmr.csv"]
+    input_folderpath = r"D:"
+    input_filename_list = ["Calliance1.csv"]
 
     # output_file = r"D:\PPRT関係\result\Caliance1_ktim.csv"
 
@@ -53,16 +54,13 @@ if __name__ == "__main__":
     # csvファイル読み込み
     the_input_df = pd.concat(pd.read_csv(os.path.join(input_folderpath, input_filename)) for input_filename in input_filename_list)
 
+    # cut_coatesを辞書型で取得
+    the_cut_coates_dict = calc_cutoff_BVI.main(the_input_df)
+
     # c_coatesを変えると、プロット上ではどんな変化をするのか（平行移動？）確認.
     # confirm_c_coates(Calliance1_nmr_df)
 
     # cut_coatesをしていしたverと指定しないverでそれぞれcperm vs ktimのプロットを作成し、どの程度それっぽさがアップするかを確認
-
-    # グラフをみてじぶんで定義したcut_coates
-    the_cut_coates_dict = {"Calliance1_22": 15,
-                           "Calliance1_24": 20,
-                           "Calliance1_28": 26
-                           }
 
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
@@ -83,10 +81,18 @@ if __name__ == "__main__":
         for i, row in the_result_df.iterrows():
             ax.annotate(row["ID"], (row["ktim"], row["cperm"]), size=8)
 
+    # 描画範囲の指定
+    pict_range = [0.001, 100000]
+    # 参考にx=yのラインを追加。
+    x = np.arange(pict_range[0], pict_range[1])
+    y = x
+    ax.plot(x, y)
+
+    # 軸の設定など
     ax.set_xscale("log")
     ax.set_yscale("log")
-    ax.set_xlim([0.000001, 1000000])
-    # ax.set_ylim([0.000001, 1000000])
+    ax.set_xlim(pict_range)
+    ax.set_ylim(pict_range)
     ax.set_xlabel('perm_pred')
     ax.set_ylabel('perm_core')
     ax.legend()
