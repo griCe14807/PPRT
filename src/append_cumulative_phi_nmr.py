@@ -25,8 +25,8 @@ if __name__ == "__main__":
 
     # ---------inputs-------------------
 
-    input_folderpath = r"D:"
-    input_filename = "Calliance1.csv"
+    input_folderpath = r"D:\tmp"
+    input_filename = "calliance1_nmr.csv"
 
     # ---------------------------------
 
