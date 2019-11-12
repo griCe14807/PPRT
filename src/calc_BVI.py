@@ -2,6 +2,7 @@ import os
 import pandas as pd
 from scipy import interpolate
 import numpy as np
+import itertools
 
 
 def BVI_cutoff(df, C):
@@ -72,8 +73,8 @@ def X_spectral_theoretical(x, df, Pci):
         Pci
     """
     
-    objective = BVI_spectral(x, df, Pci)[0] - df.BVI_Por_cum.iloc[-1]
-    objective_dx = BVI_spectral(x, df, Pci)[1]
+    objective = BVI_spectral_theoretical(x, df, Pci)[0] - df.BVI_Por_cum.iloc[-1]
+    objective_dx = BVI_spectral_theoretical(x, df, Pci)[1]
     
     # Newton法で解く。
     for count in range(10000):
@@ -83,9 +84,10 @@ def X_spectral_theoretical(x, df, Pci):
         
         if diff_x > 1:
             x = x_next
-            objective = BVI_spectral(x, df, Pci)[0] - df.BVI_Por_cum.iloc[-1]
-            objective_dx = BVI_spectral(x, df, Pci)[1]
+            objective = BVI_spectral_theoretical(x, df, Pci)[0] - df.BVI_Por_cum.iloc[-1]
+            objective_dx = BVI_spectral_theoretical(x, df, Pci)[1]
         else:
+            x = x_next
             # print("sample={4}, count={0}, x={1}, objective={2}, diff_x={3}, dx={5}".format(
               #       count, x, objective, diff_x, df.ID.iloc[1], objective_dx))
             break
@@ -113,13 +115,34 @@ def BVI_spectral_empirical(df, m, b):
     return BVI
 
 
+def m_b_spectral_empirical(df):
+    
+    """
+    このモジュールのinput dfは，複数サンプルを含んだdf
+    
+    """
+    
+    m_list = []
+    b_list = []
+    
+    # 　inputから，あらゆる組み合わせでsampleを取り出す
+    for combi_group in itertools.combinations(df.groupby("ID"), 2):
+        key_1, group_1 = combi_group[0]
+        key_2, group_2 = combi_group[1]
+        
+        # ニュートン法を用いてgroup1, group2についての最適なm, bの組み合わせを算出
+        
+    # m_listおよびb_listの平均値を最適なm, bの値とする
+    
+    return optimized_m, optimized_b
+
 
 if __name__ == "__main__":
 
 
     # ---------inputs-------------------
 
-    input_folderpath = r"C:\Users\02217013\Documents"
+    input_folderpath = r"D:\tmp"
     input_filename = "calliance1_nmr.csv"
     
     # irreducible conditionのときのPc とりあえずPsiで構わん（というか統一してあれば単位何でもいい）
@@ -137,6 +160,9 @@ if __name__ == "__main__":
     the_df = pd.read_csv(input_file)
     # the_cut_coates_dict = main(the_df)
     
+    m_b_spectral_empirical(the_df)
+    
+    """
     for key, group in the_df.groupby("ID"):
         
         # cutoff BVIを算出
@@ -150,3 +176,4 @@ if __name__ == "__main__":
         
         
         print(the_BVI_cutoff, the_t2_cutoff, optimized_x)
+    """
