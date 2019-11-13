@@ -62,7 +62,7 @@ def BVI_spectral_theoretical(x, df, Pci):
     return BVI, BVI_dx
 
 
-def X_spectral_theoretical(x, df, Pci):
+def X_spectral_theoretical(x0, df, Pci):
 
     """
     spectral BVIをtheoreticalにやった時、
@@ -73,6 +73,10 @@ def X_spectral_theoretical(x, df, Pci):
         Pci
     """
     
+    # 初期値を指定
+    x = x0
+    
+    # 解きたい方程式 objective
     objective = BVI_spectral_theoretical(x, df, Pci)[0] - df.BVI_Por_cum.iloc[-1]
     objective_dx = BVI_spectral_theoretical(x, df, Pci)[1]
     
@@ -105,17 +109,27 @@ def BVI_spectral_empirical(df, m, b):
     # 各T2におけるSwiの列を作成
     df["Swi"] = 1 / (m * df.T2.copy() + b)
     
+    # mについて微分した式
+    df["Swi_dm"] = - df.T2.copy * ((m * df.T2.copy + b) ** (-2))
+    
+    # bについて微分した式
+    df["Swi_db"] = -((m * df.T2.copy + b) ** (-2))
+    
     # T2 < T2i（すなわちWi > W) のところではSwi = 1, Swiの傾きは0
     df.Swi[df.Swi > 1] = 1
     df.Swi[df.Swi < 0] = 0
 
     # spectral BVIを産出
     BVI = df.Por.dot(df.Swi)
+    
+    # BVIの偏微分を算出
+    BVI_dm = df.Por.dot(df.Swi_dm)
+    BVI_db = df.Por.dot(df.Swi_db)
 
-    return BVI
+    return BVI, BVI_dm, BVI_db
 
 
-def m_b_spectral_empirical(df):
+def m_b_spectral_empirical(df, m0, b0):
     
     """
     このモジュールのinput dfは，複数サンプルを含んだdf
@@ -130,7 +144,19 @@ def m_b_spectral_empirical(df):
         key_1, group_1 = combi_group[0]
         key_2, group_2 = combi_group[1]
         
+        # objective_1とobjective_2の連立方程式をm, bについて解く
+        objective_1 = BVI_spectral_empirical(group_1, m, b)[0] - group_1.BVI_Por_cum.iloc[-1]
+        objective_2 = BVI_spectral_empirical(group_2, m, b)[0] - group_2.BVI_Por_cum.iloc[-1]
+        
+        objective_dm_1 = BVI_spectral_empirical(group_1, m, b)[1]
+        objective_db_1 = BVI_spectral_empirical(group_1, m, b)[1]
+        
+        objective_dm_2 = BVI_spectral_empirical(group_2, m, b)[2]
+        objective_db_2 = BVI_spectral_empirical(group_2, m, b)[2]
+        
         # ニュートン法を用いてgroup1, group2についての最適なm, bの組み合わせを算出
+        for count in range(1000):
+            
         
     # m_listおよびb_listの平均値を最適なm, bの値とする
     
