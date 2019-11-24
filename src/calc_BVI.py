@@ -110,15 +110,21 @@ def BVI_spectral_empirical(df, m, b):
     df["Swi"] = 1 / (m * df.T2.copy() + b)
     
     # mについて微分した式
-    df["Swi_dm"] = -1 * (df.T2.copy() * ((m * df.T2.copy() + b) ** (-2)))
+    df["Swi_dm"] = -1 * (df.T2.copy() / ((m * df.T2.copy() + b) ** 2))
     
     # bについて微分した式
-    df["Swi_db"] = -1 * ((m * df.T2.copy() + b) ** (-2))
+    df["Swi_db"] = -1 / ((m * df.T2.copy() + b) ** 2)
     
     # T2 < T2i（すなわちWi > W) のところではSwi = 1, Swiの傾きは0
     df.Swi[df.Swi > 1] = 1
     df.Swi[df.Swi < 0] = 0
+    
+    df.Swi_dm[df.Swi > 1] = 0
+    df.Swi_dm[df.Swi < 0] = 0
 
+    df.Swi_db[df.Swi > 1] = 0
+    df.Swi_db[df.Swi < 0] = 0
+    
     # spectral BVIを産出
     BVI = df.Por.dot(df.Swi)
     
@@ -152,14 +158,13 @@ def m_b_spectral_empirical(df, m0, b0):
         # ニュートン法を用いる
         for count in range(1000):
             
-            # テイラー展開を一次の項で打ち切り、線形一次方程式で近似
             objective_1 = BVI_spectral_empirical(group_1, m, b)[0] - group_1.BVI_Por_cum.iloc[-1]
             objective_2 = BVI_spectral_empirical(group_2, m, b)[0] - group_2.BVI_Por_cum.iloc[-1]
             
             objective_dm_1 = BVI_spectral_empirical(group_1, m, b)[1]
-            objective_db_1 = BVI_spectral_empirical(group_1, m, b)[1]
+            objective_db_1 = BVI_spectral_empirical(group_1, m, b)[2]
             
-            objective_dm_2 = BVI_spectral_empirical(group_2, m, b)[2]
+            objective_dm_2 = BVI_spectral_empirical(group_2, m, b)[1]
             objective_db_2 = BVI_spectral_empirical(group_2, m, b)[2]
             
             # 計算をしやすくするために行列の形にする
@@ -171,29 +176,39 @@ def m_b_spectral_empirical(df, m0, b0):
                                         [objective_dm_2, objective_db_2]])
             
             # 漸化式を解き、次のステップのm, bを算出
-            next_var_array = var_array - np.dot(gradient_matrix.T, objective_array)
+            next_var_array = var_array - np.dot(
+                    np.linalg.pinv(gradient_matrix), objective_array)
             m = next_var_array[0]
             b = next_var_array[1]
             
             diff = np.sqrt(np.sum((var_array - next_var_array) ** 2))
             
-            if diff > 1:
+            if diff > 0.1:
                 # print("m={0}, b={1}, continue".format(m, b))
                 continue
             else:
-                print("break! k1={0}, k2={1}, count={2}".format(key_1, key_2, count))
+                print("break! k1={0}, k2={1}, m={3}, b={4}, count={2}".format(
+                        key_1, key_2, count, m, b))
                 m_list.append(m)
                 b_list.append(b)
                 break
     
-    print(m_list)
-    print(b_list)
+    # 条件で搾れるようarrayに直す
+    m_list = np.array(m_list)
+    b_list = np.array(b_list)
+    
+    # 0 < m < 0.1, b > 0 を満たすべき
+    m_list_adopted = m_list[(0 < m_list) & (m_list < 0.2) & (0 < b_list) & (b_list < 3)]
+    b_list_adopted = b_list[(0 < m_list) & (m_list < 0.2) & (0 < b_list) & (b_list < 3)]
         
     # m_listおよびb_listの平均値を最適なm, bの値とする
-    optimized_m = sum(m_list) / len(m_list)
-    optimized_b = sum(b_list) / len(b_list)
+    optimized_m = sum(m_list_adopted) / len(m_list_adopted)
+    optimized_b = sum(b_list_adopted) / len(b_list_adopted)
     
-    return optimized_m, optimized_b
+    print("optimized_m = {0}".format(optimized_m))
+    print("optimized_b = {0}".format(optimized_b))
+    
+    return m_list_adopted, b_list_adopted, optimized_m, optimized_b
 
 
 if __name__ == "__main__":
@@ -222,7 +237,7 @@ if __name__ == "__main__":
     the_df = pd.read_csv(input_file)
     # the_cut_coates_dict = main(the_df)
     
-    optimized_m, optimized_b = m_b_spectral_empirical(the_df, m0, b0)
+    m_list, b_list, optimized_m, optimized_b = m_b_spectral_empirical(the_df, m0, b0)
     
     """
     for key, group in the_df.groupby("ID"):
