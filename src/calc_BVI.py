@@ -34,7 +34,7 @@ def calc_cutoff_C(df):
     return t2_cutoff
 
 
-def BVI_spectral_theoretical(x, df, Pci):
+def BVI_spectral_theoretical(x, df, Pci=50):
     
     """
     X, df, Pciをインプットとして、コアサンプルのspectral BVIおよびそのx微分値を返す。
@@ -62,7 +62,7 @@ def BVI_spectral_theoretical(x, df, Pci):
     return BVI, BVI_dx
 
 
-def X_spectral_theoretical(x0, df, Pci):
+def X_spectral_theoretical(x0, df, Pci=50):
 
     """
     spectral BVIをtheoreticalにやった時、
@@ -70,7 +70,8 @@ def X_spectral_theoretical(x0, df, Pci):
     :inputs
         x first pint of sigma / rho_2
         df
-        Pci
+        Pci irreducible conditionにおけるcapillary pressure. 
+        xの値を知りたいときは正しい値をinputにする必要があるが、BVIを計算する段階ではx/pciが決まるので、default値を適当に設定
     """
     
     # 初期値を指定
@@ -205,9 +206,6 @@ def m_b_spectral_empirical(df, m0, b0):
     optimized_m = sum(m_list_adopted) / len(m_list_adopted)
     optimized_b = sum(b_list_adopted) / len(b_list_adopted)
     
-    print("optimized_m = {0}".format(optimized_m))
-    print("optimized_b = {0}".format(optimized_b))
-    
     return m_list_adopted, b_list_adopted, optimized_m, optimized_b
 
 
@@ -219,9 +217,6 @@ if __name__ == "__main__":
     input_folderpath = r"C:\Users\02217013\Documents"
     input_filename = "calliance1_nmr.csv"
     
-    # irreducible conditionのときのPc とりあえずPsiで構わん（というか統一してあれば単位何でもいい）
-    the_Pci = 50
-
     # newton法をすたーとするx, m, bの値
     x0 = 1000
 
@@ -249,7 +244,7 @@ if __name__ == "__main__":
         the_t2_cutoff = calc_cutoff_C(group)
         
         # calc best x using newton method
-        optimized_x = X_spectral_theoretical(x0, group, the_Pci)
+        optimized_x = X_spectral_theoretical(x0, group)
         
         
         print(the_BVI_cutoff, the_t2_cutoff, optimized_x)
